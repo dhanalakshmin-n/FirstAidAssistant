@@ -1,0 +1,8 @@
+data/
+vectorstore/
+_pycache__/
+.env
+virtualenv/
+livekit_agent/__pycache__/
+
+
