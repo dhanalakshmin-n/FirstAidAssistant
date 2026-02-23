@@ -1,6 +1,8 @@
 from dotenv import load_dotenv
 load_dotenv()
 
+from guardrails import guardrail_llm
+
 import asyncio
 import logging
 import uuid
@@ -81,7 +83,10 @@ class _BackendLLMStream(LLMStream):
                     question = text.strip()
                 break
 
-        response = await asyncio.to_thread(_ask_backend_sync, question)
+        response = await guardrail_llm(
+            type("ChatCtx", (), {"messages": [type("Msg", (), {"content": question})()]})(),
+            _ask_backend_sync,
+        )
         chunk_id = f"bk-{uuid.uuid4().hex[:8]}"
         self._event_ch.send_nowait(
             ChatChunk(id=chunk_id, delta=ChoiceDelta(role="assistant", content=response))
@@ -89,7 +94,6 @@ class _BackendLLMStream(LLMStream):
 
 
 async def on_request(req: JobRequest) -> None:
-    """Called when LiveKit has a job for this worker. Accept to run the entrypoint."""
     logger.info(
         "received job request room=%s agent_name=%s job_id=%s",
         req.room.name,
